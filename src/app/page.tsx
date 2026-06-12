@@ -1,65 +1,74 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { onboardUser } from './actions/onboarding'
+import { Role } from '@prisma/client'
 
 export default function Home() {
+  const { isSignedIn, isLoaded } = useUser()
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  const handleRoleSelection = async (role: Role) => {
+    setLoading(true)
+    try {
+      const res = await onboardUser(role)
+      if (res.success) {
+        router.push(role === 'RECRUITER' ? '/recruiter/dashboard' : '/candidate/dashboard')
+      }
+    } catch (err) {
+      console.error('Failed to sync profile:', err)
+      alert('Something went wrong setting up your workspace.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isLoaded) return <div className="p-8 text-center text-slate-400">Loading platform assets...</div>
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-70px)] px-4">
+      <div className="max-w-3xl text-center space-y-6">
+        <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          The AI-Driven Interview Engine
+        </h2>
+        <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto">
+          Automated job indexing, lightning-fast application matching, and an immersive 20-minute autonomous AI video interview pipeline.
+        </p>
+
+        {!isSignedIn ? (
+          <div className="pt-6">
+            <p className="text-sm text-slate-500 mb-2">Sign up or sign in via the header to begin</p>
+            <div className="inline-flex h-2 w-2 rounded-full bg-indigo-500 animate-ping" />
+          </div>
+        ) : (
+          <div className="pt-8 space-y-4">
+            <h3 className="text-xl font-medium text-slate-200">Choose your workspace:</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
+              <button
+                disabled={loading}
+                onClick={() => handleRoleSelection('CANDIDATE')}
+                className="p-6 bg-slate-900 border border-slate-800 rounded-xl hover:border-indigo-500 hover:bg-slate-900/80 transition-all text-left group"
+              >
+                <div className="text-indigo-400 font-semibold mb-1 group-hover:text-indigo-300">I am a Candidate</div>
+                <div className="text-xs text-slate-400">Apply to jobs, upload your resume, and take AI video interviews.</div>
+              </button>
+
+              <button
+                disabled={loading}
+                onClick={() => handleRoleSelection('RECRUITER')}
+                className="p-6 bg-slate-900 border border-slate-800 rounded-xl hover:border-purple-500 hover:bg-slate-900/80 transition-all text-left group"
+              >
+                <div className="text-purple-400 font-semibold mb-1 group-hover:text-purple-300">I am a Recruiter</div>
+                <div className="text-xs text-slate-400">Post open opportunities and let AI score and screen applicants.</div>
+              </button>
+            </div>
+            {loading && <p className="text-sm text-slate-500 animate-pulse">Setting up your workspace...</p>}
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }

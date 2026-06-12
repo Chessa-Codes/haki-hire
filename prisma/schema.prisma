@@ -1,0 +1,61 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CANDIDATE
+  RECRUITER
+}
+
+enum Status {
+  APPLIED
+  INTERVIEW_SCHEDULED
+  INTERVIEWING
+  COMPLETED
+}
+
+model User {
+  id        String        @id @default(uuid())
+  clerkId   String        @unique
+  email     String        @unique
+  role      Role          @default(CANDIDATE)
+  createdAt DateTime      @default(now())
+  jobs      Job[]
+  apps      Application[]
+}
+
+model Job {
+  id           String        @id @default(uuid())
+  title        String
+  description  String
+  domain       String
+  recruiterId  String
+  recruiter    User          @relation(fields: [recruiterId], references: [id])
+  applications Application[]
+  createdAt    DateTime      @default(now())
+}
+
+model Application {
+  id          String     @id @default(uuid())
+  jobId       String
+  job         Job        @relation(fields: [jobId], references: [id])
+  candidateId String
+  candidate   User       @relation(fields: [candidateId], references: [id])
+  cvUrl       String
+  status      Status     @default(APPLIED)
+  interview   Interview?
+  createdAt   DateTime   @default(now())
+}
+
+model Interview {
+  id            String      @id @default(uuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id])
+  transcript    Json?
+  aiEvaluation  String?
+  updatedAt     DateTime    @updatedAt
+}
